@@ -115,6 +115,7 @@ public:
   std::string resolve_usym(uintptr_t addr, int pid, bool show_offset=false, bool show_module=false);
   std::string resolve_inet(int af, const uint8_t* inet) const;
   std::string resolve_uid(uintptr_t addr) const;
+  std::string resolve_timestamp(uint32_t strftime_id, uint64_t nsecs);
   uint64_t resolve_kname(const std::string &name) const;
   virtual int resolve_uname(const std::string &name,
                             struct symbol *sym,
