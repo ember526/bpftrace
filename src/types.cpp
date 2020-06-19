@@ -369,7 +369,11 @@ SizedType CreateBuffer(size_t size)
 
 SizedType CreateTimestamp()
 {
-  return SizedType(Type::timestamp, 64);
+  auto tp = SizedType(Type::timestamp, 24);
+  tp.tuple_elems.emplace_back(Type::integer, 8);
+  tp.tuple_elems.emplace_back(Type::integer, 8);
+  tp.tuple_elems.emplace_back(Type::integer, 8);
+  return tp;
 }
 
 bool SizedType::IsSigned(void) const

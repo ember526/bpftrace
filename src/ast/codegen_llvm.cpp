@@ -834,6 +834,28 @@ void CodegenLLVM::visit(Call &call)
     b_.CreateLifetimeEnd(buf);
     expr_ = nullptr;
   }
+  else if (call.func == "strftime")
+  {
+    auto elements = AsyncEvent::Strftime().asLLVMType(b_);
+    StructType *strftime_struct = b_.GetStructType(call.func + "_t",
+                                                   elements,
+                                                   true);
+
+    AllocaInst *buf = b_.CreateAllocaBPF(strftime_struct, call.func + "_t");
+    b_.CreateStore(b_.GetIntSameSize(asyncactionint(AsyncAction::strftime),
+                                     elements.at(0)),
+                   b_.CreateGEP(buf, { b_.getInt64(0), b_.getInt32(0) }));
+
+    b_.CreateStore(b_.GetIntSameSize(strftime_id_, elements.at(1)),
+                   b_.CreateGEP(buf, { b_.getInt64(0), b_.getInt32(1) }));
+    strftime_id_++;
+    Expression &arg = *call.vargs->at(1);
+    arg.accept(*this);
+    b_.CreateStore(expr_,
+                   b_.CreateGEP(buf, { b_.getInt64(0), b_.getInt32(2) }));
+    expr_ = buf;
+    // b_.CreateLifetimeEnd(buf);
+  }
   else if (call.func == "kstack" || call.func == "ustack")
   {
     Value *stackid = b_.CreateGetStackId(
@@ -1821,6 +1843,7 @@ void CodegenLLVM::visit(Probe &probe)
     int starting_cat_id = cat_id_;
     int starting_system_id = system_id_;
     int starting_time_id = time_id_;
+    int starting_strftime_id = strftime_id_;
     int starting_join_id = join_id_;
     int starting_helper_error_id = b_.helper_error_id_;
     int starting_non_map_print_id = non_map_print_id_;
@@ -1830,6 +1853,7 @@ void CodegenLLVM::visit(Probe &probe)
       cat_id_ = starting_cat_id;
       system_id_ = starting_system_id;
       time_id_ = starting_time_id;
+      strftime_id_ = starting_strftime_id;
       join_id_ = starting_join_id;
       b_.helper_error_id_ = starting_helper_error_id;
       non_map_print_id_ = starting_non_map_print_id;

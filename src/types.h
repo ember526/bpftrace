@@ -254,7 +254,7 @@ public:
   };
   bool IsTupleTy(void) const
   {
-    return type == Type::tuple;
+    return type == Type::tuple || type == Type::timestamp;
   };
 
   friend std::ostream &operator<<(std::ostream &, const SizedType &);
