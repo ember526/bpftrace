@@ -1,9 +1,9 @@
 #include <cstring>
 
+#include "async_event_types.h"
 #include "bpftrace.h"
 #include "mapkey.h"
 #include "utils.h"
-
 namespace bpftrace {
 
 bool MapKey::operator!=(const MapKey &k) const
@@ -83,6 +83,11 @@ std::string MapKey::argument_value(BPFtrace &bpftrace,
     case Type::ustack:
       return bpftrace.get_stack(
           read_data<uint64_t>(data), true, arg.stack_type, 4);
+    case Type::timestamp:
+    {
+      auto p = static_cast<const AsyncEvent::Strftime *>(data);
+      return bpftrace.resolve_timestamp(p->strftime_id, p->nsecs_since_boot);
+    }
     case Type::ksym:
       return bpftrace.resolve_ksym(read_data<uint64_t>(data));
     case Type::usym:

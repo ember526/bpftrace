@@ -48,6 +48,8 @@ and this project adheres to
   - [#1377](https://github.com/iovisor/bpftrace/pull/1377)
 - Add support for non-map print()
   - [#1381](https://github.com/iovisor/bpftrace/pull/1381)
+- Add builtin function: `strftime`
+  - [#1387](https://github.com/iovisor/bpftrace/pull/1387)
 
 #### Changed
 

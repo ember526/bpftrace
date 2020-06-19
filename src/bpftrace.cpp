@@ -736,6 +736,14 @@ std::vector<std::unique_ptr<IPrintable>> BPFtrace::get_arg_values(const std::vec
               true,
               arg.type.stack_type, 8)));
         break;
+      case Type::timestamp:
+        arg_values.push_back(
+            std::make_unique<PrintableString>(resolve_timestamp(
+                reinterpret_cast<AsyncEvent::Strftime *>(arg_data + arg.offset)
+                    ->strftime_id,
+                reinterpret_cast<AsyncEvent::Strftime *>(arg_data + arg.offset)
+                    ->nsecs_since_boot)));
+        break;
       case Type::cast:
         if (arg.type.is_pointer) {
           arg_values.push_back(
@@ -1119,7 +1127,6 @@ void BPFtrace::poll_perf_events(int epollfd, bool drain)
     {
       perf_reader_event_read((perf_reader*)events[i].data.ptr);
     }
-
     // If we are tracing a specific pid and it has exited, we should exit
     // as well b/c otherwise we'd be tracing nothing.
     if ((procmon_ && !procmon_->is_alive()) || (child_ && !child_->is_alive()))
@@ -1671,6 +1678,52 @@ std::string BPFtrace::resolve_uid(uintptr_t addr) const
   file.close();
 
   return username;
+}
+
+std::string BPFtrace::resolve_timestamp(uint32_t strftime_id,
+                                        uint64_t nsecs_since_boot)
+{
+  auto fmt = strftime_args_[strftime_id].c_str();
+  char timestr[STRING_SIZE];
+  struct tm tmp;
+  std::ifstream file("/proc/stat");
+  if (!file)
+  {
+    std::cerr << "Fail to open file /proc/stat: " << std::strerror(errno)
+              << std::endl;
+    return "(?)";
+  }
+  std::string line, field;
+  uint64_t btime = 0;
+  while (std::getline(file, line))
+  {
+    std::stringstream ss(line);
+    ss >> field;
+    if (field == "btime")
+    {
+      ss >> btime;
+      if (ss.fail())
+        btime = 0;
+      break;
+    }
+  }
+  if (btime == 0)
+  {
+    std::cerr << "Fail to read btime from /proc/stat" << std::endl;
+    return "";
+  }
+  time_t time = btime + nsecs_since_boot / 1e9;
+  if (!localtime_r(&time, &tmp))
+  {
+    std::cerr << "localtime_r: " << strerror(errno) << std::endl;
+    return "";
+  }
+  if (strftime(timestr, sizeof(timestr), fmt, &tmp) == 0)
+  {
+    std::cerr << "strftime returned 0" << std::endl;
+    return "";
+  }
+  return timestr;
 }
 
 std::string BPFtrace::resolve_buf(char *buf, size_t size)
