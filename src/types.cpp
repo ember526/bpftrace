@@ -369,7 +369,7 @@ SizedType CreateBuffer(size_t size)
 
 SizedType CreateTimestamp()
 {
-  return SizedType(Type::timestamp, 64);
+  return SizedType(Type::timestamp, 16);
 }
 
 bool SizedType::IsSigned(void) const
